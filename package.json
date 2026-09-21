@@ -1,0 +1,27 @@
+{
+  "name": "workforceiq",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WorkforceIQ Lite — AI-powered HR & Payroll platform",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "db:migrate": "turbo run db:migrate --filter=api",
+    "db:migrate:create": "turbo run db:migrate:create --filter=api",
+    "db:seed": "turbo run db:seed --filter=api",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

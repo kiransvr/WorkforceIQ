@@ -1,0 +1,96 @@
+{
+  "countryCode": "ET",
+  "countryName": "Ethiopia",
+  "currencyCode": "ETB",
+  "currencySymbol": "Br",
+  "defaultLocale": "en-ET",
+  "calendarSystem": "gregorian",
+  "dataRetentionDays": 3650,
+  "sourceReferences": {
+    "incomeTax": "Ethiopian Revenue and Customs Authority (ERCA) — verify against latest directive before go-live",
+    "pension": "Private Organisations Employees' Pension Proclamation No. 715/2011",
+    "leaveDefaults": "Labour Proclamation No. 1156/2019"
+  },
+  "taxRuleSet": {
+    "name": "Ethiopia Income Tax 2024/25",
+    "effectiveDate": "2024-07-01",
+    "brackets": [
+      { "minIncome": 0,     "maxIncome": 600,    "rate": 0.00, "fixedDeduction": 0 },
+      { "minIncome": 601,   "maxIncome": 1650,   "rate": 0.10, "fixedDeduction": 60 },
+      { "minIncome": 1651,  "maxIncome": 3200,   "rate": 0.15, "fixedDeduction": 142.5 },
+      { "minIncome": 3201,  "maxIncome": 5250,   "rate": 0.20, "fixedDeduction": 302.5 },
+      { "minIncome": 5251,  "maxIncome": 7800,   "rate": 0.25, "fixedDeduction": 565 },
+      { "minIncome": 7801,  "maxIncome": 10900,  "rate": 0.30, "fixedDeduction": 955 },
+      { "minIncome": 10901, "maxIncome": null,   "rate": 0.35, "fixedDeduction": 1500 }
+    ]
+  },
+  "statutoryDeductionRuleSet": {
+    "name": "Ethiopia Private Sector Pension — Proclamation 715/2011",
+    "effectiveDate": "2011-01-01",
+    "rules": [
+      {
+        "name": "Private Pension",
+        "employeeRate": 0.07,
+        "employerRate": 0.11,
+        "ceiling": null,
+        "applicableEmploymentTypes": ["permanent"]
+      }
+    ]
+  },
+  "defaultLeaveTypes": [
+    {
+      "name": "Annual Leave",
+      "code": "ANNUAL",
+      "accrualDaysPerYear": 16,
+      "accrualIncrementPerYearOfService": 1,
+      "maxCarryOver": 5,
+      "isPaid": true
+    },
+    {
+      "name": "Sick Leave",
+      "code": "SICK",
+      "accrualDaysPerYear": 0,
+      "maxDaysPerOccurrence": 180,
+      "isPaid": true,
+      "requiresDocumentation": true
+    },
+    {
+      "name": "Maternity Leave",
+      "code": "MATERNITY",
+      "totalDays": 90,
+      "isPaid": true
+    },
+    {
+      "name": "Paternity Leave",
+      "code": "PATERNITY",
+      "totalDays": 3,
+      "isPaid": true
+    },
+    {
+      "name": "Unpaid Leave",
+      "code": "UNPAID",
+      "isPaid": false
+    },
+    {
+      "name": "Compassionate Leave",
+      "code": "COMPASSIONATE",
+      "totalDays": 3,
+      "isPaid": true
+    }
+  ],
+  "publicHolidays": [
+    { "name": "Ethiopian Christmas (Genna)", "month": 1, "day": 7 },
+    { "name": "Epiphany (Timkat)", "month": 1, "day": 19 },
+    { "name": "Victory of Adwa", "month": 3, "day": 2 },
+    { "name": "Good Friday", "variable": true },
+    { "name": "Easter (Fasika)", "variable": true },
+    { "name": "International Labour Day", "month": 5, "day": 1 },
+    { "name": "Patriots' Victory Day", "month": 5, "day": 5 },
+    { "name": "Downfall of the Derg", "month": 5, "day": 28 },
+    { "name": "Ethiopian New Year (Enkutatash)", "month": 9, "day": 11 },
+    { "name": "Finding of the True Cross (Meskel)", "month": 9, "day": 27 },
+    { "name": "Eid al-Fitr", "variable": true },
+    { "name": "Eid al-Adha", "variable": true },
+    { "name": "Prophet's Birthday (Mawlid)", "variable": true }
+  ]
+}
