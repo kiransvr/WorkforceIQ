@@ -4,7 +4,7 @@ import { PayrollService } from './payroll.service';
 import { PayrollController } from './payroll.controller';
 import { PayrollRun } from './entities/payroll-run.entity';
 import { PayrollRulesEngine } from './payroll-rules.engine';
-import { EmployeesModule } from '../Employees/employees.module'; // Import the employee module folder context
+import { EmployeesModule } from '../employees/employees.module.ts';// Import the employee module folder context
 
 @Module({
   imports: [
