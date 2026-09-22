@@ -9,5 +9,5 @@ export interface JwtPayload {
 }
 
 export interface RequestWithUser extends Request {
-  user: Pick<User, 'id' | 'email' | 'role' | 'organizationId'>;
+  user: any;
 }

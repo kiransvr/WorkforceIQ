@@ -1,10 +1,18 @@
 {
-  "$schema": "https://turbo.build/schema.json",
+  "$schema": "https://turbo.build",
   "ui": "tui",
+  "globalEnv": [
+    "DATABASE_URL",
+    "DB_PASSWORD",
+    "DB_USER",
+    "DB_HOST",
+    "DB_PORT",
+    "DB_NAME"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "inputs": ["$TURBO_DEFAULT$"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "cache": false
     },

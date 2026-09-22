@@ -1,17 +1,16 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { EmployeesService } from './employees.service.ts';
-import { EmployeesController } from './employees.controller.ts/index.js';
-import { Employee } from './entities/employee.entity';
+import { EmployeesService } from './employees.service';
+import { EmployeesController } from './employees.controller';
+import { Employee } from './entities/employee.entity'; // Ensure this path points exactly to your Employee entity file
 
 @Module({
   imports: [
-    // Registers the Employee database entity for database queries
-    TypeOrmModule.forFeature([Employee])
+    // Register the TypeORM repository provider context explicitly for this module
+    TypeOrmModule.forFeature([Employee]),
   ],
   controllers: [EmployeesController],
   providers: [EmployeesService],
-  // CRITICAL: Exporting the service allows PayrollModule to import and use it
-  exports: [EmployeesService], 
+  exports: [EmployeesService],
 })
 export class EmployeesModule {}
