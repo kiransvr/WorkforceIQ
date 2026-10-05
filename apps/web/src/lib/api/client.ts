@@ -61,6 +61,11 @@ export interface PayrollRun {
   employerPension: number | string;
   netPay: number | string;
   status: string;
+  createdByUserId: string;
+  approvedByUserId: string | null;
+  approvedAt: string | null;
+  finalizedByUserId: string | null;
+  finalizedAt: string | null;
   employee: Pick<
     Employee,
     "id" | "firstName" | "fatherName" | "grandFatherName" | "email"
@@ -88,33 +93,18 @@ export interface OrganizationSummary {
 }
 
 export interface LoginResponse {
-  accessToken: string;
   user: AuthenticatedUser;
 }
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1",
   headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 });
 
-export function storeAccessToken(token: string): void {
-  window.localStorage.setItem("access_token", token);
-}
-
-export function clearAccessToken(): void {
+if (typeof window !== "undefined") {
   window.localStorage.removeItem("access_token");
 }
-
-apiClient.interceptors.request.use((config) => {
-  const token =
-    typeof window !== "undefined"
-      ? window.localStorage.getItem("access_token")
-      : null;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
 apiClient.interceptors.response.use(
   (response) => response,
@@ -124,7 +114,6 @@ apiClient.interceptors.response.use(
       error.response?.status === 401 &&
       typeof window !== "undefined"
     ) {
-      clearAccessToken();
       if (window.location.pathname !== "/login") {
         window.location.assign("/login");
       }

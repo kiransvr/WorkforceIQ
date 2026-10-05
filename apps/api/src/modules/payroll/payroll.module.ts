@@ -5,6 +5,7 @@ import { PayrollController } from './payroll.controller';
 import { EmployeesModule } from '../employees/employees.module';
 import { AuthModule } from '../auth/auth.module';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { AuditModule } from '../audit/audit.module';
 
 // TypeORM payroll entities
 import { PayrollRun } from './entities/payroll-run.entity'; 
@@ -18,6 +19,7 @@ import { PayrollRulesEngine } from './payroll-rules.engine';
     TypeOrmModule.forFeature([PayrollRun, PayrollLineItem]),
     EmployeesModule,
     AuthModule,
+    AuditModule,
   ],
   controllers: [PayrollController],
   providers: [

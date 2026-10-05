@@ -43,26 +43,31 @@ function requestError(error: unknown, fallback: string): string {
 export default function PayrollPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [runs, setRuns] = useState<PayrollRun[]>([]);
+  const [currentUserId, setCurrentUserId] = useState("");
   const [payPeriod, setPayPeriod] = useState(currentPayPeriod);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [actingOnRunId, setActingOnRunId] = useState("");
   const [loadError, setLoadError] = useState("");
   const [processError, setProcessError] = useState("");
+  const [workflowError, setWorkflowError] = useState("");
   const [notice, setNotice] = useState("");
 
   const loadPayrollData = useCallback(async () => {
     setIsLoading(true);
     setLoadError("");
     try {
-      const [employeeResponse, runsResponse] = await Promise.all([
+      const [employeeResponse, runsResponse, profileResponse] = await Promise.all([
         apiClient.get<Employee[]>("/employees"),
         apiClient.get<PayrollRun[]>(
           `/payroll/period/${encodeURIComponent(payPeriod)}`,
         ),
+        apiClient.get<{ user: { id: string } }>("/auth/me"),
       ]);
       setEmployees(employeeResponse.data);
       setRuns(runsResponse.data);
+      setCurrentUserId(profileResponse.data.user.id);
       setSelectedEmployeeId((currentId) =>
         employeeResponse.data.some(
           (employee) =>
@@ -105,6 +110,33 @@ export default function PayrollPage() {
       ),
     [runs],
   );
+
+  async function transitionRun(run: PayrollRun, action: "approve" | "finalize") {
+    setWorkflowError("");
+    setNotice("");
+    setActingOnRunId(run.id);
+    try {
+      const { data } = await apiClient.patch<PayrollRun>(
+        `/payroll/${run.id}/${action}`,
+      );
+      setRuns((currentRuns) =>
+        currentRuns.map((currentRun) =>
+          currentRun.id === data.id ? data : currentRun,
+        ),
+      );
+      setNotice(
+        action === "approve"
+          ? "Payroll run approved. The approver can now finalize it."
+          : "Payroll run finalized and locked. No payment was initiated.",
+      );
+    } catch (error) {
+      setWorkflowError(
+        requestError(error, `Unable to ${action} this payroll run.`),
+      );
+    } finally {
+      setActingOnRunId("");
+    }
+  }
 
   async function processPayroll(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -166,8 +198,8 @@ export default function PayrollPage() {
         </section>
 
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
-          These are draft calculations, not approved payroll or payment
-          instructions. Review and verify calculations before any disbursement.
+          A different authorized user must approve each draft. Finalization locks
+          the recorded calculation; it does not initiate a bank payment.
         </div>
 
         {loadError ? (
@@ -296,6 +328,7 @@ export default function PayrollPage() {
                         </th>
                         <th className="px-4 py-3 font-semibold">Net pay</th>
                         <th className="px-5 py-3 font-semibold">Status</th>
+                        <th className="px-5 py-3 font-semibold">Workflow</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -322,15 +355,64 @@ export default function PayrollPage() {
                             {money(run.netPay)}
                           </td>
                           <td className="px-5 py-4">
-                            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-800">
+                            <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+                              run.status === "Finalized"
+                                ? "bg-emerald-50 text-emerald-800"
+                                : run.status === "Approved"
+                                  ? "bg-blue-50 text-blue-800"
+                                  : "bg-amber-50 text-amber-800"
+                            }`}>
                               {run.status}
                             </span>
+                          </td>
+                          <td className="px-5 py-4">
+                            {run.status === "Draft" && !run.createdByUserId ? (
+                              <span className="text-rose-700">
+                                Legacy draft — preparer unknown
+                              </span>
+                            ) : run.status === "Draft" &&
+                            currentUserId !== run.createdByUserId ? (
+                              <button
+                                type="button"
+                                disabled={actingOnRunId !== ""}
+                                onClick={() => void transitionRun(run, "approve")}
+                                className="rounded-lg border border-blue-200 px-3 py-2 font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                              >
+                                {actingOnRunId === run.id ? "Approving…" : "Approve"}
+                              </button>
+                            ) : run.status === "Approved" &&
+                              currentUserId === run.approvedByUserId ? (
+                              <button
+                                type="button"
+                                disabled={actingOnRunId !== ""}
+                                onClick={() => void transitionRun(run, "finalize")}
+                                className="rounded-lg border border-emerald-200 px-3 py-2 font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                              >
+                                {actingOnRunId === run.id ? "Finalizing…" : "Finalize"}
+                              </button>
+                            ) : run.status === "Draft" ? (
+                              <span className="text-slate-500">Waiting for another user to approve</span>
+                            ) : run.status === "Approved" ? (
+                              <span className="text-slate-500">Waiting for the approver to finalize</span>
+                            ) : (
+                              <span className="text-slate-500">Locked</span>
+                            )}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+              )}
+              {workflowError && (
+                <p role="alert" className="border-t border-slate-100 px-5 py-3 text-sm text-rose-700">
+                  {workflowError}
+                </p>
+              )}
+              {notice && (
+                <p role="status" className="border-t border-slate-100 px-5 py-3 text-sm text-emerald-700">
+                  {notice}
+                </p>
               )}
             </section>
           </>

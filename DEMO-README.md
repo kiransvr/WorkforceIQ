@@ -28,9 +28,12 @@ Open http://localhost:3000.
 
 Log in with the `DEMO_ADMIN_EMAIL` and `DEMO_ADMIN_PASSWORD` values in the root
 `.env`. The dashboard, employee directory, employee profile, payroll draft screen,
-and organization profile use the local API. Payroll drafts are calculations only;
-they are not approved payroll or payment instructions. Time and attendance are not
-implemented yet.
+and organization profile use the local API. Payroll drafts must be approved by a
+different authorized user before the approver can finalize and lock them. Finalizing
+records the payroll result only; it does not initiate a bank payment. Time and
+attendance are not implemented yet. Employee create/update and payroll preparation,
+approval, and finalization actions are recorded in the append-only organization
+audit log. Bank account values are never copied into audit records.
 
 ## Routes
 
@@ -45,12 +48,18 @@ implemented yet.
 
 1. Copy `.env.example` to `.env` in the repository root.
 2. Set `JWT_ACCESS_SECRET` to a random secret of at least 32 characters, and set a
-   local `DEMO_ADMIN_PASSWORD` of at least 12 characters. For example, generate the
-   JWT secret with:
+   local `DEMO_ADMIN_PASSWORD` of at least 12 characters. Set `FIELD_ENCRYPTION_KEY`
+   to a random 32-byte key encoded as 64 hexadecimal characters. Generate both keys
+   with:
 
    ```bash
    node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
+
+   Keep `FIELD_ENCRYPTION_KEY` backed up securely and unchanged: encrypted bank
+   account data cannot be recovered without it. The migration encrypts existing
+   employee bank accounts when migrations are applied.
 
 3. Start PostgreSQL, run the schema migrations, and create the local organization/admin:
 

@@ -1,5 +1,6 @@
 import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { encryptedStringTransformer } from '../../../common/transformers/encrypted-string.transformer';
 import { Organization } from '../../organizations/entities/organization.entity';
 
 @Entity('employees')
@@ -48,7 +49,11 @@ export class Employee extends BaseEntity {
   @Column({ name: 'bank_name', default: 'Commercial Bank of Ethiopia' })
   bankName!: string;
 
-  @Column({ name: 'bank_account_number', select: false })
+  @Column({
+    name: 'bank_account_number',
+    select: false,
+    transformer: encryptedStringTransformer,
+  })
   bankAccountNumber!: string;
 
   // --- Workspace Matrix Structural Links ---

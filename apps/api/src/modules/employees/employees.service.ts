@@ -4,15 +4,28 @@ import { Repository } from 'typeorm';
 import { Employee } from './entities/employee.entity';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { AuditService } from '../audit/audit.service';
+
+export interface EmployeeAuditActor {
+  id: string;
+  role: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
 
 @Injectable()
 export class EmployeesService {
   constructor(
     @InjectRepository(Employee)
     private readonly employeeRepository: Repository<Employee>,
+    private readonly auditService: AuditService,
   ) {}
 
-  async create(dto: CreateEmployeeDto, organizationId: string): Promise<Employee> {
+  async create(
+    dto: CreateEmployeeDto,
+    organizationId: string,
+    actor: EmployeeAuditActor,
+  ): Promise<Employee> {
     const email = dto.email.trim().toLowerCase();
     const duplicate = await this.employeeRepository.findOne({
       where: [
@@ -31,7 +44,21 @@ export class EmployeesService {
       organizationId,
       organization: { id: organizationId },
     });
-    return this.employeeRepository.save(employee);
+    const savedEmployee = await this.employeeRepository.save(employee);
+    await this.auditService.record({
+      organizationId,
+      actorId: actor.id,
+      actorRole: actor.role,
+      entityType: 'Employee',
+      entityId: savedEmployee.id,
+      action: 'CREATED',
+      after: this.auditSnapshot(savedEmployee, {
+        bankAccountNumberConfigured: true,
+      }),
+      ipAddress: actor.ipAddress,
+      userAgent: actor.userAgent,
+    });
+    return savedEmployee;
   }
 
   async findAll(organizationId: string): Promise<Employee[]> {
@@ -49,8 +76,15 @@ export class EmployeesService {
     return employee;
   }
 
-  async update(id: string, dto: UpdateEmployeeDto, organizationId: string): Promise<Employee> {
+  async update(
+    id: string,
+    dto: UpdateEmployeeDto,
+    organizationId: string,
+    actor: EmployeeAuditActor,
+  ): Promise<Employee> {
     const employee = await this.findOne(id, organizationId);
+    const before = this.auditSnapshot(employee);
+    const bankAccountNumberUpdated = dto.bankAccountNumber !== undefined;
     if (dto.email || dto.tinNumber) {
       const duplicate = await this.employeeRepository
         .createQueryBuilder('employee')
@@ -72,6 +106,40 @@ export class EmployeesService {
     if (dto.tinNumber) {
       employee.tinNumber = dto.tinNumber.trim();
     }
-    return this.employeeRepository.save(employee);
+    const savedEmployee = await this.employeeRepository.save(employee);
+    await this.auditService.record({
+      organizationId,
+      actorId: actor.id,
+      actorRole: actor.role,
+      entityType: 'Employee',
+      entityId: savedEmployee.id,
+      action: bankAccountNumberUpdated ? 'BANK_ACCOUNT_UPDATED' : 'UPDATED',
+      before,
+      after: this.auditSnapshot(savedEmployee, {
+        bankAccountNumberUpdated,
+      }),
+      ipAddress: actor.ipAddress,
+      userAgent: actor.userAgent,
+    });
+    return savedEmployee;
+  }
+
+  private auditSnapshot(
+    employee: Employee,
+    extra: Record<string, unknown> = {},
+  ): Record<string, unknown> {
+    return {
+      firstName: employee.firstName,
+      fatherName: employee.fatherName,
+      grandFatherName: employee.grandFatherName,
+      email: employee.email,
+      tinNumber: employee.tinNumber,
+      basicSalary: employee.basicSalary,
+      transportAllowance: employee.transportAllowance,
+      otherAllowances: employee.otherAllowances,
+      bankName: employee.bankName,
+      bankAccountNumberConfigured: true,
+      ...extra,
+    };
   }
 }

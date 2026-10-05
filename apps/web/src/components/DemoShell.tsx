@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Icon } from './Icons';
-import apiClient, { AuthenticatedUser, clearAccessToken } from '../lib/api/client';
+import apiClient, { AuthenticatedUser } from '../lib/api/client';
 
 const nav=[['/dashboard','Dashboard','grid'],['/employees','Employees','users'],['/payroll','Payroll Runs','wallet'],['/organizations','Organizations','building']];
 export default function DemoShell({children,title,subtitle}:{children:React.ReactNode;title:string;subtitle:string}){
@@ -13,13 +13,20 @@ export default function DemoShell({children,title,subtitle}:{children:React.Reac
  const [sessionError,setSessionError]=useState('');
  useEffect(()=>{
   let active=true;
-  if(!window.localStorage.getItem('access_token')){router.replace('/login');return;}
   apiClient.get<{user:AuthenticatedUser}>('/auth/me')
    .then(({data})=>{if(active)setUser(data.user);})
    .catch(()=>{if(active)setSessionError('Unable to verify your session. Check that the API is available, then retry.');});
   return()=>{active=false;};
  },[router]);
- function signOut(){clearAccessToken();router.replace('/login');}
+ async function signOut(){
+  setSessionError('');
+  try{
+   await apiClient.post('/auth/logout');
+   router.replace('/login');
+  }catch{
+   setSessionError('Unable to sign out because the API is unavailable. Please retry.');
+  }
+ }
  if(!user){
   return <div className="grid min-h-screen place-items-center bg-slate-50 p-6 text-center">
    <div className="max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

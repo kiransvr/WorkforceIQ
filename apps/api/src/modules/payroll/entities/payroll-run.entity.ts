@@ -1,6 +1,7 @@
 import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { Employee } from '../../employees/entities/employee.entity';
+import { PayrollStatus } from '../enums/payroll-status.enum';
 
 @Entity('payroll_runs')
 export class PayrollRun extends BaseEntity {
@@ -25,8 +26,23 @@ export class PayrollRun extends BaseEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2, name: 'net_pay' })
   netPay!: number;
 
-  @Column({ default: 'Draft' }) // Draft, Approved, Paid
-  status!: string;
+  @Column({ default: PayrollStatus.DRAFT })
+  status!: PayrollStatus;
+
+  @Column({ name: 'created_by_user_id', type: 'uuid', nullable: true })
+  createdByUserId!: string | null;
+
+  @Column({ name: 'approved_by_user_id', type: 'uuid', nullable: true })
+  approvedByUserId!: string | null;
+
+  @Column({ name: 'approved_at', type: 'timestamptz', nullable: true })
+  approvedAt!: Date | null;
+
+  @Column({ name: 'finalized_by_user_id', type: 'uuid', nullable: true })
+  finalizedByUserId!: string | null;
+
+  @Column({ name: 'finalized_at', type: 'timestamptz', nullable: true })
+  finalizedAt!: Date | null;
 
   @ManyToOne(() => Employee, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'employee_id' })

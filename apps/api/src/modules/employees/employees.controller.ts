@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -9,6 +9,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { EmployeesService } from './employees.service';
 import { Employee } from './entities/employee.entity';
+import { RequestWithUser } from '../auth/interfaces/request-with-user.interface';
 
 type EmployeeResponse = Omit<Employee, 'bankAccountNumber'>;
 
@@ -22,9 +23,10 @@ export class EmployeesController {
   create(
     @Body() dto: CreateEmployeeDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: RequestWithUser,
   ): Promise<EmployeeResponse> {
     return this.employeesService
-      .create(dto, this.organizationIdFor(user))
+      .create(dto, this.organizationIdFor(user), this.auditActor(user, request))
       .then(({ bankAccountNumber: _bankAccountNumber, ...employee }) => employee);
   }
 
@@ -51,9 +53,10 @@ export class EmployeesController {
     @Param('id') id: string,
     @Body() dto: UpdateEmployeeDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: RequestWithUser,
   ): Promise<EmployeeResponse> {
     return this.employeesService
-      .update(id, dto, this.organizationIdFor(user))
+      .update(id, dto, this.organizationIdFor(user), this.auditActor(user, request))
       .then(({ bankAccountNumber: _bankAccountNumber, ...employee }) => employee);
   }
 
@@ -62,5 +65,17 @@ export class EmployeesController {
       throw new ForbiddenException('This account is not assigned to an organization.');
     }
     return user.organizationId;
+  }
+
+  private auditActor(
+    user: AuthenticatedUser,
+    request: RequestWithUser,
+  ): { id: string; role: string; ipAddress: string | null; userAgent: string | null } {
+    return {
+      id: user.id,
+      role: user.role,
+      ipAddress: request.ip ?? null,
+      userAgent: request.get('user-agent') ?? null,
+    };
   }
 }

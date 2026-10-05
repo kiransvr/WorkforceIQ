@@ -3,7 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import apiClient, { LoginResponse, storeAccessToken } from '../../lib/api/client';
+import apiClient, { LoginResponse } from '../../lib/api/client';
 
 function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
@@ -34,11 +34,10 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const { data } = await apiClient.post<LoginResponse>('/auth/login', {
+      await apiClient.post<LoginResponse>('/auth/login', {
         email,
         password,
       });
-      storeAccessToken(data.accessToken);
       router.replace('/dashboard');
     } catch (requestError) {
       setError(getErrorMessage(requestError));

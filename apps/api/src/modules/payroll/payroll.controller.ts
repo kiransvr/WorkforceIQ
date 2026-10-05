@@ -1,4 +1,14 @@
-import { Body, Controller, ForbiddenException, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -8,6 +18,7 @@ import { AuthenticatedUser } from '../auth/interfaces/request-with-user.interfac
 import { ProcessPayrollDto } from './dto/process-payroll.dto';
 import { PayrollService } from './payroll.service';
 import { PayrollRun } from './entities/payroll-run.entity';
+import { RequestWithUser } from '../auth/interfaces/request-with-user.interface';
 
 @Controller({ path: 'payroll', version: '1' })
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -19,11 +30,39 @@ export class PayrollController {
   async processSingleWorker(
     @Body() dto: ProcessPayrollDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: RequestWithUser,
   ): Promise<PayrollRun> {
     return this.payrollService.calculateAndSaveWorkerPayroll(
       dto.employeeId,
       dto.payPeriod,
       this.organizationIdFor(user),
+      this.auditActor(user, request),
+    );
+  }
+
+  @Patch(':id/approve')
+  approveRun(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: RequestWithUser,
+  ): Promise<PayrollRun> {
+    return this.payrollService.approveRun(
+      id,
+      this.organizationIdFor(user),
+      this.auditActor(user, request),
+    );
+  }
+
+  @Patch(':id/finalize')
+  finalizeRun(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: RequestWithUser,
+  ): Promise<PayrollRun> {
+    return this.payrollService.finalizeRun(
+      id,
+      this.organizationIdFor(user),
+      this.auditActor(user, request),
     );
   }
 
@@ -40,5 +79,17 @@ export class PayrollController {
       throw new ForbiddenException('This account is not assigned to an organization.');
     }
     return user.organizationId;
+  }
+
+  private auditActor(
+    user: AuthenticatedUser,
+    request: RequestWithUser,
+  ): { id: string; role: string; ipAddress: string | null; userAgent: string | null } {
+    return {
+      id: user.id,
+      role: user.role,
+      ipAddress: request.ip ?? null,
+      userAgent: request.get('user-agent') ?? null,
+    };
   }
 }
