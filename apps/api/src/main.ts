@@ -7,7 +7,7 @@ import { AppModule } from './app.module';
 // CHANGE THIS:
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { WinstonModule } from 'nest-winston';
-import { winstonConfig } from '@config/winston.config';
+import { winstonConfig } from './config/winston.config';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {

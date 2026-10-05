@@ -1,5 +1,5 @@
 import { Entity, Column, Index } from 'typeorm';
-import { BaseEntity } from '@common/entities/base.entity';
+import { BaseEntity } from '../../../common/entities/base.entity';
 
 export interface StatutoryDeductionRule {
   name: string;               // e.g. "Private Pension"
@@ -18,24 +18,24 @@ export interface StatutoryDeductionRule {
 export class StatutoryDeductionRuleSet extends BaseEntity {
   @Index()
   @Column({ type: 'char', length: 2 })
-  countryCode: string;
+  countryCode!: string;
 
   @Column({ type: 'varchar', length: 255 })
-  name: string; // e.g. "Ethiopia Private Pension 2011"
+  name!: string; // e.g. "Ethiopia Private Pension 2011"
 
   @Column({ type: 'jsonb' })
-  rules: StatutoryDeductionRule[];
+  rules!: StatutoryDeductionRule[];
 
   @Index()
   @Column({ type: 'date' })
-  effectiveDate: Date;
+  effectiveDate!: Date;
 
   @Column({ type: 'date', nullable: true })
-  expiryDate: Date | null;
+  expiryDate!: Date | null;
 
   @Column({ type: 'text', nullable: true })
-  sourceReference: string | null;
+  sourceReference!: string | null;
 
   @Column({ type: 'boolean', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 }

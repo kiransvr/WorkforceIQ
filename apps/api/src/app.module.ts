@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import * as path from 'node:path';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import redisConfig from './config/redis.config';
@@ -8,6 +9,7 @@ import jwtConfig from './config/jwt.config';
 import storageConfig from './config/storage.config';
 import aiConfig from './config/ai.config';
 import { DatabaseModule } from './database/database.module';
+import { HealthModule } from './health/health.module';
 
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -22,7 +24,10 @@ import { AuditModule } from './modules/audit/audit.module';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [appConfig, databaseConfig, redisConfig, jwtConfig, storageConfig, aiConfig],
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: [
+        path.resolve(__dirname, '../../../.env.local'),
+        path.resolve(__dirname, '../../../.env'),
+      ],
     }),
 
     // ─── Rate limiting ─────────────────────────────────────────
@@ -33,6 +38,7 @@ import { AuditModule } from './modules/audit/audit.module';
 
     // ─── Infrastructure ────────────────────────────────────────
     DatabaseModule,
+    HealthModule,
 
     // ─── Domain modules ────────────────────────────────────────
     AuthModule,

@@ -2,15 +2,14 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EmployeesService } from './employees.service';
 import { EmployeesController } from './employees.controller';
-import { Employee } from './entities/employee.entity'; // Ensure this path points exactly to your Employee entity file
+import { Employee } from './entities/employee.entity';
+import { AuthModule } from '../auth/auth.module';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
 @Module({
-  imports: [
-    // Register the TypeORM repository provider context explicitly for this module
-    TypeOrmModule.forFeature([Employee]),
-  ],
+  imports: [TypeOrmModule.forFeature([Employee]), AuthModule],
   controllers: [EmployeesController],
-  providers: [EmployeesService],
+  providers: [EmployeesService, RolesGuard],
   exports: [EmployeesService],
 })
 export class EmployeesModule {}

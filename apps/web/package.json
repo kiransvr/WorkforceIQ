@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "next build",
-    "start": "next start",
+    "build": "node scripts/next-with-build-dir.mjs build",
+    "start": "node scripts/next-with-build-dir.mjs start",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },

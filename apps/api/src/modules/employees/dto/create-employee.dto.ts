@@ -1,21 +1,79 @@
-// Replace the very first line with this:
-import { IsString, IsEmail, IsNotEmpty, IsNumber, Min, Length } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  MaxLength,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 
 export class CreateEmployeeDto {
-  // ... (keep names the same)
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  firstName!: string;
 
-  // Update these three properties to use @Min:
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  fatherName!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  grandFatherName!: string;
+
+  @IsEmail()
+  @MaxLength(255)
+  email!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  tinNumber!: string;
+
   @IsNumber()
   @Min(0)
-  basicSalary: number;
+  basicSalary!: number;
 
+  @ValidateIf((_object, value) => value !== undefined)
   @IsNumber()
   @Min(0)
-  transportAllowance: number;
+  transportAllowance?: number;
 
+  @ValidateIf((_object, value) => value !== undefined)
   @IsNumber()
   @Min(0)
-  otherAllowances: number;
+  otherAllowances?: number;
 
-  // ... (keep the rest of the file exactly the same)
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsString()
+  @MaxLength(255)
+  region?: string;
+
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsString()
+  @MaxLength(255)
+  subCity?: string;
+
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsString()
+  @MaxLength(255)
+  woreda?: string;
+
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsString()
+  @MaxLength(255)
+  kebele?: string;
+
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsString()
+  @MaxLength(255)
+  bankName?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  bankAccountNumber!: string;
 }

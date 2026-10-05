@@ -1,5 +1,5 @@
 import { Entity, Column, Index } from 'typeorm';
-import { BaseEntity } from '@common/entities/base.entity';
+import { BaseEntity } from '../../../common/entities/base.entity';
 
 export interface TaxBracket {
   minIncome: number;
@@ -17,24 +17,24 @@ export interface TaxBracket {
 export class TaxRuleSet extends BaseEntity {
   @Index()
   @Column({ type: 'char', length: 2 })
-  countryCode: string; // ISO 3166-1 alpha-2
+  countryCode!: string; // ISO 3166-1 alpha-2
 
   @Column({ type: 'varchar', length: 255 })
-  name: string; // e.g. "Ethiopia PAYE 2024/25"
+  name!: string; // e.g. "Ethiopia PAYE 2024/25"
 
   @Column({ type: 'jsonb' })
-  brackets: TaxBracket[];
+  brackets!: TaxBracket[];
 
   @Index()
   @Column({ type: 'date' })
-  effectiveDate: Date;
+  effectiveDate!: Date;
 
   @Column({ type: 'date', nullable: true })
-  expiryDate: Date | null;
+  expiryDate!: Date | null;
 
   @Column({ type: 'text', nullable: true })
-  sourceReference: string | null; // e.g. "ERCA Directive 2024"
+  sourceReference!: string | null; // e.g. "ERCA Directive 2024"
 
   @Column({ type: 'boolean', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 }

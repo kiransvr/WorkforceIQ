@@ -1,51 +1,341 @@
-'use client';
+"use client";
 
-import React from 'react';
-import StatCard from '@/components/StatCard';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import DemoShell from "../../components/DemoShell";
+import apiClient, { Employee, PayrollRun } from "../../lib/api/client";
+
+function currentPayPeriod(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function employeeName(employee: Employee | PayrollRun["employee"]): string {
+  return [employee.firstName, employee.fatherName, employee.grandFatherName]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function money(value: number | string): string {
+  const amount = Number(value);
+  return Number.isFinite(amount)
+    ? new Intl.NumberFormat("en-ET", {
+        style: "currency",
+        currency: "ETB",
+        currencyDisplay: "code",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount)
+    : "—";
+}
+
+function requestError(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message;
+    if (typeof message === "string") return message;
+    if (Array.isArray(message)) return message.join(" ");
+    if (!error.response)
+      return "Cannot reach the API. Check that it is running and try again.";
+  }
+  return fallback;
+}
 
 export default function PayrollPage() {
-  // Formatter function to convert raw numbers to clean ETB text strings
-  const formatETB = (amount: number) => {
-    return new Intl.NumberFormat('en-ET', {
-      style: 'currency',
-      currency: 'ETB',
-      currencyDisplay: 'code'
-    }).format(amount);
-  };
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [runs, setRuns] = useState<PayrollRun[]>([]);
+  const [payPeriod, setPayPeriod] = useState(currentPayPeriod);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [processError, setProcessError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  // Mock results from processing a single employee via your engine
-  const activeRun = {
-    employeeName: "Abebe Kebede",
-    basicSalary: 25000,
-    taxDeduction: 7250,
-    netPay: 16000
-  };
+  const loadPayrollData = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError("");
+    try {
+      const [employeeResponse, runsResponse] = await Promise.all([
+        apiClient.get<Employee[]>("/employees"),
+        apiClient.get<PayrollRun[]>(
+          `/payroll/period/${encodeURIComponent(payPeriod)}`,
+        ),
+      ]);
+      setEmployees(employeeResponse.data);
+      setRuns(runsResponse.data);
+      setSelectedEmployeeId((currentId) =>
+        employeeResponse.data.some(
+          (employee) =>
+            employee.id === currentId &&
+            !runsResponse.data.some((run) => run.employee.id === currentId),
+        )
+          ? currentId
+          : "",
+      );
+    } catch (error) {
+      setLoadError(
+        requestError(error, "Unable to load payroll data. Please try again."),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [payPeriod]);
+
+  useEffect(() => {
+    void loadPayrollData();
+  }, [loadPayrollData]);
+
+  const availableEmployees = useMemo(
+    () =>
+      employees.filter(
+        (employee) => !runs.some((run) => run.employee.id === employee.id),
+      ),
+    [employees, runs],
+  );
+
+  const totals = useMemo(
+    () =>
+      runs.reduce(
+        (sum, run) => ({
+          gross: sum.gross + Number(run.grossTaxableIncome),
+          tax: sum.tax + Number(run.employmentIncomeTax),
+          net: sum.net + Number(run.netPay),
+        }),
+        { gross: 0, tax: 0, net: 0 },
+      ),
+    [runs],
+  );
+
+  async function processPayroll(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setProcessError("");
+    setNotice("");
+    if (!selectedEmployeeId) {
+      setProcessError("Choose an employee before processing payroll.");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const { data } = await apiClient.post<PayrollRun>("/payroll/process", {
+        employeeId: selectedEmployeeId,
+        payPeriod,
+      });
+      setRuns((currentRuns) => [
+        data,
+        ...currentRuns.filter((run) => run.employee.id !== data.employee.id),
+      ]);
+      setSelectedEmployeeId("");
+      setNotice(
+        `Payroll calculated and saved as ${data.status.toLowerCase()}.`,
+      );
+    } catch (error) {
+      setProcessError(
+        requestError(error, "Unable to process payroll. Please try again."),
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Execute Payroll Run</h1>
-        <p className="text-xs text-slate-500">Calculate active worker pay stubs</p>
-      </div>
+    <DemoShell
+      title="Payroll runs"
+      subtitle="Calculate and review organization payroll drafts"
+    >
+      <div className="space-y-6">
+        <section className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">
+              Payroll calculations
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Select a pay period to review saved calculations or calculate an
+              employee draft.
+            </p>
+          </div>
+          <label className="text-xs font-semibold text-slate-600">
+            Pay period
+            <input
+              type="month"
+              value={payPeriod}
+              onChange={(event) => setPayPeriod(event.target.value)}
+              className="mt-1 block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-blue-500"
+            />
+          </label>
+        </section>
 
-      {/* Using your exact StatCard component to show a single worker's breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard 
-          label={`Basic Salary (${activeRun.employeeName})`} 
-          value={formatETB(activeRun.basicSalary)} 
-          icon="wallet" 
-        />
-        <StatCard 
-          label="Income Tax Withheld" 
-          value={formatETB(activeRun.taxDeduction)} 
-          icon="receipt" 
-        />
-        <StatCard 
-          label="Net Take-Home Pay" 
-          value={formatETB(activeRun.netPay)} 
-          icon="trend" 
-        />
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
+          These are draft calculations, not approved payroll or payment
+          instructions. Review and verify calculations before any disbursement.
+        </div>
+
+        {loadError ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+            <p role="alert" className="text-sm text-rose-700">
+              {loadError}
+            </p>
+            <button
+              type="button"
+              onClick={() => void loadPayrollData()}
+              className="mt-3 rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <>
+            <section
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+              aria-label="Payroll period totals"
+            >
+              {[
+                ["Employees processed", String(runs.length)],
+                ["Gross taxable income", money(totals.gross)],
+                ["Income tax withheld", money(totals.tax)],
+                ["Calculated net pay", money(totals.net)],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                >
+                  <p className="text-xs font-medium text-slate-500">{label}</p>
+                  <p
+                    className="mt-2 text-lg font-bold text-slate-900"
+                    aria-live="polite"
+                  >
+                    {isLoading ? "…" : value}
+                  </p>
+                </div>
+              ))}
+            </section>
+
+            <form
+              onSubmit={processPayroll}
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <h3 className="text-sm font-bold text-slate-900">
+                Calculate employee payroll
+              </h3>
+              <div className="mt-4 flex flex-wrap items-end gap-3">
+                <label className="min-w-64 flex-1 text-xs font-semibold text-slate-600">
+                  Employee
+                  <select
+                    value={selectedEmployeeId}
+                    onChange={(event) =>
+                      setSelectedEmployeeId(event.target.value)
+                    }
+                    disabled={
+                      isLoading ||
+                      isProcessing ||
+                      availableEmployees.length === 0
+                    }
+                    className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-blue-500 disabled:bg-slate-50"
+                  >
+                    <option value="">
+                      {availableEmployees.length === 0
+                        ? "No unprocessed employees for this period"
+                        : "Select an employee"}
+                    </option>
+                    {availableEmployees.map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employeeName(employee)} — {employee.email}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="submit"
+                  disabled={isLoading || isProcessing || !selectedEmployeeId}
+                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isProcessing ? "Calculating…" : "Calculate draft"}
+                </button>
+              </div>
+              {processError && (
+                <p role="alert" className="mt-3 text-sm text-rose-700">
+                  {processError}
+                </p>
+              )}
+              {notice && (
+                <p role="status" className="mt-3 text-sm text-emerald-700">
+                  {notice}
+                </p>
+              )}
+            </form>
+
+            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-100 px-5 py-4">
+                <h3 className="text-sm font-bold text-slate-900">
+                  Saved payroll calculations
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Period {payPeriod}. Employee bank details are not shown.
+                </p>
+              </div>
+              {isLoading ? (
+                <p className="p-6 text-center text-sm text-slate-500">
+                  Loading payroll calculations…
+                </p>
+              ) : runs.length === 0 ? (
+                <p className="p-8 text-center text-sm text-slate-500">
+                  No payroll calculations have been saved for this period.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[760px] text-left text-xs">
+                    <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
+                      <tr>
+                        <th className="px-5 py-3 font-semibold">Employee</th>
+                        <th className="px-4 py-3 font-semibold">
+                          Gross taxable
+                        </th>
+                        <th className="px-4 py-3 font-semibold">Income tax</th>
+                        <th className="px-4 py-3 font-semibold">
+                          Employee pension
+                        </th>
+                        <th className="px-4 py-3 font-semibold">Net pay</th>
+                        <th className="px-5 py-3 font-semibold">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {runs.map((run) => (
+                        <tr key={run.id}>
+                          <td className="px-5 py-4">
+                            <p className="font-semibold text-slate-800">
+                              {employeeName(run.employee)}
+                            </p>
+                            <p className="mt-1 text-slate-500">
+                              {run.employee.email}
+                            </p>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            {money(run.grossTaxableIncome)}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            {money(run.employmentIncomeTax)}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            {money(run.employeePension)}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap font-semibold">
+                            {money(run.netPay)}
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-800">
+                              {run.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          </>
+        )}
       </div>
-    </div>
+    </DemoShell>
   );
 }

@@ -6,9 +6,13 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
+    "smoke": "node scripts/smoke-test.mjs",
+    "verify": "pnpm build && pnpm --filter api test:ci && pnpm smoke",
     "test": "turbo run test",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
+    "db:up": "docker compose up -d --wait postgres",
+    "db:setup": "pnpm db:up && pnpm --filter api build && pnpm --filter api db:migrate && pnpm --filter api db:seed",
     "db:migrate": "turbo run db:migrate --filter=api",
     "db:migrate:create": "turbo run db:migrate:create --filter=api",
     "db:seed": "turbo run db:seed --filter=api",

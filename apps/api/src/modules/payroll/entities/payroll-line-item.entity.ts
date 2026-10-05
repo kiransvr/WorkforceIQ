@@ -1,68 +1,68 @@
 import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
-import { BaseEntity } from '@common/entities/base.entity';
+import { BaseEntity } from '../../../common/entities/base.entity';
 import { PayrollRun } from './payroll-run.entity';
-import { Employee } from '@modules/employees/entities/employee.entity';
+import { Employee } from '../../employees/entities/employee.entity';
 
 @Entity('payroll_line_items')
 export class PayrollLineItem extends BaseEntity {
   @Index()
-  @Column({ type: 'uuid' })
-  organizationId: string;
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string;
 
   @Index()
-  @Column({ type: 'uuid' })
-  payrollRunId: string;
+  @Column({ name: 'payroll_run_id', type: 'uuid' })
+  payrollRunId!: string;
 
   @ManyToOne(() => PayrollRun, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'payroll_run_id' })
-  payrollRun: PayrollRun;
+  payrollRun!: PayrollRun;
 
-  @Column({ type: 'uuid' })
-  employeeId: string;
+  @Column({ name: 'employee_id', type: 'uuid' })
+  employeeId!: string;
 
   @ManyToOne(() => Employee, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'employee_id' })
-  employee: Employee;
+  employee!: Employee;
 
   // ─── Salary components ──────────────────────────────────────
   @Column({ type: 'numeric', precision: 18, scale: 2 })
-  basicSalary: number;
+  basicSalary!: number;
 
   @Column({ type: 'jsonb', default: '[]' })
-  allowances: Array<{ name: string; amount: number; taxable: boolean }>;
+  allowances!: Array<{ name: string; amount: number; taxable: boolean }>;
 
   @Column({ type: 'jsonb', default: '[]' })
-  otherDeductions: Array<{ name: string; amount: number }>;
+  otherDeductions!: Array<{ name: string; amount: number }>;
 
   @Column({ type: 'numeric', precision: 18, scale: 2, default: 0 })
-  overtimePay: number;
+  overtimePay!: number;
 
   @Column({ type: 'numeric', precision: 18, scale: 2, default: 0 })
-  bonus: number;
+  bonus!: number;
 
   // ─── Computed totals (set by rules engine) ──────────────────
   @Column({ type: 'numeric', precision: 18, scale: 2 })
-  grossTaxableIncome: number;
+  grossTaxableIncome!: number;
 
   @Column({ type: 'numeric', precision: 18, scale: 2 })
-  incomeTax: number;
+  incomeTax!: number;
 
   @Column({ type: 'numeric', precision: 18, scale: 2 })
-  employeePension: number;
+  employeePension!: number;
 
   @Column({ type: 'numeric', precision: 18, scale: 2 })
-  employerPension: number;
+  employerPension!: number;
 
   @Column({ type: 'jsonb', default: '[]' })
-  otherStatutoryDeductions: Array<{ name: string; employeeAmount: number; employerAmount: number }>;
+  otherStatutoryDeductions!: Array<{ name: string; employeeAmount: number; employerAmount: number }>;
 
   @Column({ type: 'numeric', precision: 18, scale: 2 })
-  netPay: number;
+  netPay!: number;
 
   @Column({ type: 'varchar', length: 3 })
-  currencyCode: string;
+  currencyCode!: string;
 
   // ─── Snapshot of rules applied ──────────────────────────────
   @Column({ type: 'jsonb', nullable: true })
-  appliedRulesSnapshot: Record<string, unknown> | null;
+  appliedRulesSnapshot!: Record<string, unknown> | null;
 }

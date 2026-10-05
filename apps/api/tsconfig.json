@@ -8,18 +8,11 @@
     "allowSyntheticDefaultImports": true,
     "target": "es2021",
     "sourceMap": true,
-    "baseUrl": "./",
     "outDir": "./dist",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "strict": true,
-    "skipLibCheck": true,
-    "paths": {
-      "@config/*": ["src/config/*"],
-      "@database/*": ["src/database/*"],
-      "@common/*": ["src/common/*"],
-      "@modules/*": ["src/modules/*"]
-    }
+    "skipLibCheck": true
   },
   "include": ["src/**/*"],
   "ts-node": {

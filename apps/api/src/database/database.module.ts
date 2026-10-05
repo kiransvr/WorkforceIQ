@@ -18,7 +18,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
         migrationsRun: false,
         synchronize: false, // Never use synchronize:true in production
-        logging: configService.get<string>('app.nodeEnv') === 'development',
+        logging: ['error', 'warn'],
         ssl:
           configService.get<string>('app.nodeEnv') === 'production'
             ? { rejectUnauthorized: false }

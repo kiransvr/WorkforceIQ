@@ -5,17 +5,17 @@ import { Branch } from './branch.entity';
 @Entity('departments')
 export class Department extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
-  name: string;
+  name!: string;
 
   @Index()
-  @Column({ type: 'uuid' })
-  organizationId: string;
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string;
 
   @Index()
-  @Column({ type: 'uuid' })
-  branchId: string;
+  @Column({ name: 'branch_id', type: 'uuid' })
+  branchId!: string;
 
   @ManyToOne(() => Branch, (branch) => branch.departments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'branch_id' })
-  branch: Branch;
+  branch!: Branch;
 }

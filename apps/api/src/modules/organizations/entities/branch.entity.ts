@@ -6,22 +6,22 @@ import { Department } from './department.entity';
 @Entity('branches')
 export class Branch extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
-  name: string;
+  name!: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  address: string | null;
+  address!: string | null;
 
   @Column({ type: 'boolean', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @Index()
-  @Column({ type: 'uuid' })
-  organizationId: string;
+  @Column({ name: 'organization_id', type: 'uuid' })
+  organizationId!: string;
 
   @ManyToOne(() => Organization, (org) => org.branches, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'organization_id' })
-  organization: Organization;
+  organization!: Organization;
 
   @OneToMany(() => Department, (dept) => dept.branch)
-  departments: Department[];
+  departments!: Department[];
 }

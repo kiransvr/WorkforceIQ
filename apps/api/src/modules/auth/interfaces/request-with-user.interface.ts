@@ -1,13 +1,13 @@
 import { Request } from 'express';
-import { User } from '@modules/users/entities/user.entity';
+import { UserRole } from '../../users/enums/user-role.enum';
 
-export interface JwtPayload {
-  sub: string;           // user id
+export interface AuthenticatedUser {
+  id: string;
   email: string;
-  role: string;
+  role: UserRole;
   organizationId: string | null;
 }
 
 export interface RequestWithUser extends Request {
-  user: any;
+  user: AuthenticatedUser;
 }

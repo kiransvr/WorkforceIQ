@@ -9,6 +9,7 @@
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "type-check": "tsc --noEmit",
     "test": "jest",
+    "test:ci": "jest --runInBand",
     "test:cov": "jest --coverage",
     "db:migrate": "typeorm migration:run -d dist/database/data-source.js",
     "db:migrate:create": "typeorm migration:create src/database/migrations/$npm_config_name",

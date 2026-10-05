@@ -1,11 +1,51 @@
 'use client';
-import { useState } from 'react';
+
+import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import apiClient, { LoginResponse, storeAccessToken } from '../../lib/api/client';
+
+function getErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const apiMessage = error.response?.data?.message;
+    if (typeof apiMessage === 'string') {
+      return apiMessage;
+    }
+    if (Array.isArray(apiMessage)) {
+      return apiMessage.join(' ');
+    }
+    if (!error.response) {
+      return 'Cannot reach the API. Check that it is running and try again.';
+    }
+  }
+  return 'Sign in failed. Please try again.';
+}
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@workforceiq.demo');
-  const [password, setPassword] = useState('demo123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const { data } = await apiClient.post<LoginResponse>('/auth/login', {
+        email,
+        password,
+      });
+      storeAccessToken(data.accessToken);
+      router.replace('/dashboard');
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -34,22 +74,21 @@ export default function LoginPage() {
             <div className="rounded-3xl border border-white/10 bg-white/[.06] p-8 shadow-2xl backdrop-blur-xl">
               <h2 className="text-2xl font-bold text-white">Welcome back</h2>
               <p className="mt-2 text-sm text-slate-400">Sign in to your WorkforceIQ workspace.</p>
-              <form onSubmit={(e) => { e.preventDefault(); router.push('/dashboard'); }} className="mt-8 space-y-5">
+              <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                 <div>
-                  <label className="text-xs font-semibold text-slate-300">Email address</label>
-                  <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-blue-400" />
+                  <label htmlFor="email" className="text-xs font-semibold text-slate-300">Email address</label>
+                  <input id="email" name="email" value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="username" required maxLength={255} className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-blue-400" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-300">Password</label>
-                  <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-blue-400" />
+                  <label htmlFor="password" className="text-xs font-semibold text-slate-300">Password</label>
+                  <input id="password" name="password" value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" required maxLength={128} className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-blue-400" />
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <label className="flex items-center gap-2 text-slate-400"><input type="checkbox" defaultChecked className="rounded" /> Remember me</label>
-                  <button type="button" className="font-semibold text-blue-400">Forgot password?</button>
-                </div>
-                <button className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500">Sign in to WorkforceIQ</button>
+                {error && <p role="alert" className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">{error}</p>}
+                <button disabled={isSubmitting} className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500 disabled:cursor-wait disabled:opacity-60">
+                  {isSubmitting ? 'Signing in…' : 'Sign in to WorkforceIQ'}
+                </button>
               </form>
-              <div className="mt-6 rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 text-center text-[11px] text-blue-200">Demo mode · Any credentials will open the demo workspace</div>
+              <div className="mt-6 rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 text-center text-[11px] text-blue-200">Use the local admin credentials configured in the root .env file.</div>
             </div>
             <p className="mt-6 text-center text-[10px] text-slate-600">© 2026 WorkforceIQ · HR & Payroll Intelligence Platform</p>
           </div>

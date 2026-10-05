@@ -13,7 +13,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "outputs": [".next-build/**", "!.next-build/cache/**", "dist/**"],
       "cache": false
     },
     "dev": {

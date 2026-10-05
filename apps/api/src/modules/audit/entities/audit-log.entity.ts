@@ -7,41 +7,41 @@ import { Entity, Column, Index, CreateDateColumn, PrimaryGeneratedColumn } from 
 @Entity('audit_logs')
 export class AuditLog {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  timestamp: Date;
+  timestamp!: Date;
 
   @Index()
   @Column({ type: 'uuid' })
-  organizationId: string;
+  organizationId!: string;
 
   @Index()
   @Column({ type: 'uuid', nullable: true })
-  actorId: string | null; // null = system/job
+  actorId!: string | null; // null = system/job
 
   @Column({ type: 'varchar', length: 100 })
-  actorRole: string;
+  actorRole!: string;
 
   @Column({ type: 'varchar', length: 100 })
-  entityType: string; // e.g. 'PayrollRun', 'Employee'
+  entityType!: string; // e.g. 'PayrollRun', 'Employee'
 
   @Index()
   @Column({ type: 'uuid', nullable: true })
-  entityId: string | null;
+  entityId!: string | null;
 
   @Column({ type: 'varchar', length: 100 })
-  action: string; // e.g. 'CREATE', 'UPDATE', 'FINALIZE', 'APPROVE'
+  action!: string; // e.g. 'CREATE', 'UPDATE', 'FINALIZE', 'APPROVE'
 
   @Column({ type: 'jsonb', nullable: true })
-  before: Record<string, unknown> | null;
+  before!: Record<string, unknown> | null;
 
   @Column({ type: 'jsonb', nullable: true })
-  after: Record<string, unknown> | null;
+  after!: Record<string, unknown> | null;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
-  ipAddress: string | null;
+  ipAddress!: string | null;
 
   @Column({ type: 'text', nullable: true })
-  userAgent: string | null;
+  userAgent!: string | null;
 }

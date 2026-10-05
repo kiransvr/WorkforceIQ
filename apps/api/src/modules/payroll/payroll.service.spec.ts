@@ -3,7 +3,7 @@ import { PayrollService } from './payroll.service';
 import { PayrollRulesEngine } from './payroll-rules.engine';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { PayrollRun } from './entities/payroll-run.entity';
-import { EmployeesService } from '@modules/employees/employees.service';
+import { EmployeesService } from '../employees/employees.service';
 
 describe('PayrollService', () => {
   let service: PayrollService;

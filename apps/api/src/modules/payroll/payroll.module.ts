@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PayrollService } from './payroll.service';
 import { PayrollController } from './payroll.controller';
 import { EmployeesModule } from '../employees/employees.module';
+import { AuthModule } from '../auth/auth.module';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
 // TypeORM payroll entities
 import { PayrollRun } from './entities/payroll-run.entity'; 
@@ -15,11 +17,13 @@ import { PayrollRulesEngine } from './payroll-rules.engine';
   imports: [
     TypeOrmModule.forFeature([PayrollRun, PayrollLineItem]),
     EmployeesModule,
+    AuthModule,
   ],
   controllers: [PayrollController],
   providers: [
     PayrollService, 
-    PayrollRulesEngine
+    PayrollRulesEngine,
+    RolesGuard,
   ],
   exports: [PayrollService],
 })
