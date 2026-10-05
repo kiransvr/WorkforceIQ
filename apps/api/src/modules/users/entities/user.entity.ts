@@ -18,6 +18,9 @@ export class User extends BaseEntity {
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
+  @Column({ name: 'must_change_password', type: 'boolean', default: false })
+  mustChangePassword!: boolean;
+
   @Column({ type: 'boolean', default: false })
   mfaEnabled!: boolean;
 

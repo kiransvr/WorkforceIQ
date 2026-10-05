@@ -15,7 +15,6 @@ const apiDirectory = path.join(repositoryRoot, "apps", "api");
 const apiEntryPoint = path.join(apiDirectory, "dist", "main.js");
 const require = createRequire(path.join(apiDirectory, "package.json"));
 const { Client } = require("pg");
-const argon2 = require("argon2");
 const { parse: parseDotEnv } = require("dotenv");
 const port = Number.parseInt(process.env.API_SMOKE_PORT ?? "3137", 10);
 const apiUrl = `http://127.0.0.1:${port}/api/v1`;
@@ -230,6 +229,7 @@ async function runWorkflowSmokeChecks() {
   const updatedBankAccount = "0000000001";
   const approverEmail = `workforceiq-approver-${uniqueId}@example.test`;
   const approverPassword = `Workflow-${uniqueId}-Pass!`;
+  const changedApproverPassword = `Changed-${uniqueId}-Pass!`;
   const payPeriod = new Date().toISOString().slice(0, 7);
   const database = new Client({
     host: environment.POSTGRES_HOST ?? "localhost",
@@ -246,17 +246,34 @@ async function runWorkflowSmokeChecks() {
   try {
     await database.connect();
     databaseConnected = true;
-    const approverHash = await argon2.hash(approverPassword);
-    await database.query(
-      'INSERT INTO "users" ("email", "passwordHash", "role", "organization_id") VALUES ($1, $2, $3, $4)',
-      [
-        approverEmail,
-        approverHash,
-        "payroll_officer",
-        login.user.organizationId,
-      ],
+    const createdApprover = await requestJson(
+      `${apiUrl}/organization-users`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          email: approverEmail,
+          temporaryPassword: approverPassword,
+          role: "payroll_officer",
+        }),
+      },
     );
     approverCreated = true;
+    if (
+      createdApprover.email !== approverEmail ||
+      createdApprover.role !== "payroll_officer" ||
+      createdApprover.mustChangePassword !== true ||
+      "passwordHash" in createdApprover
+    ) {
+      throw new Error("Organization user creation did not enforce a temporary password.");
+    }
+    const organizationUsers = await requestJson(
+      `${apiUrl}/organization-users`,
+      { headers },
+    );
+    if (!organizationUsers.some((user) => user.id === createdApprover.id)) {
+      throw new Error("The new user was not listed in the organization scope.");
+    }
 
     const employeesResponse = await requestJson(`${apiUrl}/employees`, {
       headers,
@@ -452,6 +469,53 @@ async function runWorkflowSmokeChecks() {
       cookie: approverCookie,
       "content-type": "application/json",
     };
+    if (approverLogin.user.mustChangePassword !== true) {
+      throw new Error("Temporary password login did not require a password change.");
+    }
+    const restrictedTemporarySession = await fetch(`${apiUrl}/organization-users`, {
+      headers: approverHeaders,
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (restrictedTemporarySession.status !== 403) {
+      throw new Error("A temporary-password session accessed organization data before password change.");
+    }
+    await requestJson(`${apiUrl}/auth/password`, {
+      method: "PATCH",
+      headers: approverHeaders,
+      body: JSON.stringify({
+        currentPassword: approverPassword,
+        newPassword: changedApproverPassword,
+      }),
+    });
+    const changedPasswordProfile = await requestJson(
+      `${apiUrl}/auth/me`,
+      { headers: approverHeaders },
+    );
+    if (changedPasswordProfile.user.mustChangePassword !== false) {
+      throw new Error("Password change did not clear the temporary password requirement.");
+    }
+    const updatedApprover = await requestJson(
+      `${apiUrl}/organization-users/${createdApprover.id}`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ role: "auditor" }),
+      },
+    );
+    if (updatedApprover.role !== "auditor") {
+      throw new Error("Organization user role assignment did not persist.");
+    }
+    const restoredApprover = await requestJson(
+      `${apiUrl}/organization-users/${createdApprover.id}`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ role: "payroll_officer" }),
+      },
+    );
+    if (restoredApprover.role !== "payroll_officer") {
+      throw new Error("Organization user role could not be restored.");
+    }
 
     const approvedRun = await requestJson(
       `${apiUrl}/payroll/${payrollRun.id}/approve`,
@@ -519,6 +583,54 @@ async function runWorkflowSmokeChecks() {
       throw new Error("Workflow smoke check failed to clear the session cookie.");
     }
     console.log("HttpOnly session cookie login and logout checks passed.");
+
+    const deactivatedApprover = await requestJson(
+      `${apiUrl}/organization-users/${createdApprover.id}`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ isActive: false }),
+      },
+    );
+    if (deactivatedApprover.isActive !== false) {
+      throw new Error("Organization user deactivation did not persist.");
+    }
+    const inactiveLoginResponse = await fetch(`${apiUrl}/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: webOrigin },
+      body: JSON.stringify({
+        email: approverEmail,
+        password: changedApproverPassword,
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (inactiveLoginResponse.status !== 401) {
+      throw new Error("A deactivated organization user could still sign in.");
+    }
+    const reactivatedApprover = await requestJson(
+      `${apiUrl}/organization-users/${createdApprover.id}`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ isActive: true }),
+      },
+    );
+    if (reactivatedApprover.isActive !== true) {
+      throw new Error("Organization user reactivation did not persist.");
+    }
+    const userAudit = await database.query(
+      'SELECT action FROM audit_logs WHERE "entityType" = $1 AND "entityId" = $2 ORDER BY timestamp',
+      ["User", createdApprover.id],
+    );
+    if (
+      userAudit.rows.map((event) => event.action).join(",") !==
+      "CREATED,PASSWORD_CHANGED,ROLE_UPDATED,ROLE_UPDATED,DEACTIVATED,REACTIVATED"
+    ) {
+      throw new Error("Organization user audit trail is incomplete.");
+    }
+    console.log(
+      "Organization user creation, role assignment, forced password change, deactivation, and audit checks passed.",
+    );
   } catch (error) {
     flowError = error;
   } finally {

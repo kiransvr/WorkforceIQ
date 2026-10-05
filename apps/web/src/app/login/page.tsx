@@ -34,11 +34,13 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await apiClient.post<LoginResponse>('/auth/login', {
+      const { data } = await apiClient.post<LoginResponse>('/auth/login', {
         email,
         password,
       });
-      router.replace('/dashboard');
+      router.replace(
+        data.user.mustChangePassword ? '/change-password' : '/dashboard',
+      );
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {

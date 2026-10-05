@@ -1,8 +1,14 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from '../users/dto/change-password.dto';
+import { UserManagementActor } from '../users/users.service';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 15 * 60 * 1000;
@@ -56,7 +62,30 @@ export class AuthService {
         email: user.email,
         role: user.role,
         organizationId: user.organizationId,
+        mustChangePassword: user.mustChangePassword,
       },
     };
+  }
+
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+    actor: UserManagementActor,
+  ): Promise<void> {
+    const user = await this.usersService.findByIdForPasswordChange(userId);
+    if (!user || !(await argon2.verify(user.passwordHash, dto.currentPassword))) {
+      throw new UnauthorizedException('Current password is incorrect.');
+    }
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException(
+        'The new password must be different from the current password.',
+      );
+    }
+
+    await this.usersService.changePassword(
+      user,
+      await argon2.hash(dto.newPassword),
+      actor,
+    );
   }
 }

@@ -34,6 +34,10 @@ records the payroll result only; it does not initiate a bank payment. Time and
 attendance are not implemented yet. Employee create/update and payroll preparation,
 approval, and finalization actions are recorded in the append-only organization
 audit log. Bank account values are never copied into audit records.
+Organization admins can create organization-scoped accounts with a temporary
+password; users must change it before accessing organization data. Passwords are
+stored as Argon2 hashes, and admins may assign non-admin roles or deactivate
+accounts from the Users screen.
 
 ## Routes
 

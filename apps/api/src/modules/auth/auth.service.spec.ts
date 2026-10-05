@@ -31,6 +31,7 @@ describe('AuthService', () => {
       passwordHash,
       role: UserRole.ORG_ADMIN,
       organizationId: 'organization-id',
+      mustChangePassword: false,
       isActive: true,
       failedLoginAttempts: 2,
       lockedUntil: null,
@@ -53,6 +54,7 @@ describe('AuthService', () => {
         email: 'admin@example.com',
         role: UserRole.ORG_ADMIN,
         organizationId: 'organization-id',
+        mustChangePassword: false,
       },
     });
   });
@@ -64,6 +66,7 @@ describe('AuthService', () => {
       passwordHash: await argon2.hash('correct password'),
       role: UserRole.ORG_ADMIN,
       organizationId: 'organization-id',
+      mustChangePassword: false,
       isActive: true,
       failedLoginAttempts: 0,
       lockedUntil: null,
@@ -85,6 +88,7 @@ describe('AuthService', () => {
       passwordHash: await argon2.hash('correct password'),
       role: UserRole.ORG_ADMIN,
       organizationId: 'organization-id',
+      mustChangePassword: false,
       isActive: true,
       failedLoginAttempts: 4,
       lockedUntil: null,

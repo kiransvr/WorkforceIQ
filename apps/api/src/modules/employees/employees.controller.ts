@@ -31,12 +31,14 @@ export class EmployeesController {
   }
 
   @Get()
+  @Roles(UserRole.ORG_ADMIN, UserRole.PAYROLL_OFFICER)
   async findAll(@CurrentUser() user: AuthenticatedUser): Promise<EmployeeResponse[]> {
     const employees = await this.employeesService.findAll(this.organizationIdFor(user));
     return employees.map(({ bankAccountNumber: _bankAccountNumber, ...employee }) => employee);
   }
 
   @Get(':id')
+  @Roles(UserRole.ORG_ADMIN, UserRole.PAYROLL_OFFICER)
   async findOne(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,

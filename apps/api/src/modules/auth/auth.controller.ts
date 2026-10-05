@@ -4,7 +4,9 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -15,6 +17,7 @@ import { RequestWithUser } from './interfaces/request-with-user.interface';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { ChangePasswordDto } from '../users/dto/change-password.dto';
 
 const ACCESS_TOKEN_COOKIE = 'access_token';
 const ACCESS_TOKEN_COOKIE_PATH = '/api/v1';
@@ -59,5 +62,21 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   getProfile(@CurrentUser() user: RequestWithUser['user']) {
     return { user };
+  }
+
+  @Patch('password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(
+    @Body() dto: ChangePasswordDto,
+    @CurrentUser() user: RequestWithUser['user'],
+    @Req() request: RequestWithUser,
+  ): Promise<{ success: true }> {
+    await this.authService.changePassword(user.id, dto, {
+      id: user.id,
+      role: user.role,
+      ipAddress: request.ip ?? null,
+      userAgent: request.get('user-agent') ?? null,
+    });
+    return { success: true };
   }
 }

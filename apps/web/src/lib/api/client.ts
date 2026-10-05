@@ -7,6 +7,17 @@ export interface AuthenticatedUser {
   email: string;
   role: string;
   organizationId: string | null;
+  mustChangePassword: boolean;
+}
+
+export interface OrganizationUser {
+  id: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
 }
 
 export interface Employee {

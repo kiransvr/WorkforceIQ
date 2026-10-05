@@ -13,6 +13,7 @@ import { HealthModule } from './health/health.module';
 
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { UserManagementModule } from './modules/users/user-management.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
@@ -43,6 +44,7 @@ import { AuditModule } from './modules/audit/audit.module';
     // ─── Domain modules ────────────────────────────────────────
     AuthModule,
     UsersModule,
+    UserManagementModule,
     OrganizationsModule,
     EmployeesModule,
     PayrollModule,
