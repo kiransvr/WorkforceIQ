@@ -70,7 +70,7 @@ const environment = { ...localEnvironment, ...process.env };
 
 const api = spawn(process.execPath, [apiEntryPoint], {
   cwd: apiDirectory,
-  env: { ...environment, API_PORT: String(port) },
+  env: { ...environment, API_PORT: String(port), PORT: String(port) },
   stdio: "inherit",
 });
 
