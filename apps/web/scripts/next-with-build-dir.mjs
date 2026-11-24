@@ -8,8 +8,10 @@ if (!["build", "start"].includes(command)) {
 
 const require = createRequire(import.meta.url);
 const nextCli = require.resolve("next/dist/bin/next");
+const nextDistDir =
+  process.env.NEXT_DIST_DIR ?? (process.env.VERCEL ? ".next" : ".next-build");
 const next = spawn(process.execPath, [nextCli, ...process.argv.slice(2)], {
-  env: { ...process.env, NEXT_DIST_DIR: ".next-build" },
+  env: { ...process.env, NEXT_DIST_DIR: nextDistDir },
   stdio: "inherit",
 });
 
